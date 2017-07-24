@@ -1,0 +1,6 @@
+*.idea
+tekst_label.pkl
+tekst_label_2407.pkl
+title_label.pkl
+title_label_2407.pkl
+stop_words.txt
