@@ -1,14 +1,12 @@
 from sklearn.feature_extraction.text import CountVectorizer
-import re
 import pickle
-from sklearn.feature_extraction.text import TfidfTransformer
-
-
-
-
-
-tfidf_transformer=TfidfTransformer()
-
+import re
+import nltk
+nltk.download('stopwords')
+from nltk.corpus import stopwords
+from nltk.stem.snowball import NorwegianStemmer
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.model_selection import train_test_split
 
 # Leser inn pickle med label + tittel laget som dict med label som key og tittel som value.
 #title_labels = []
@@ -21,11 +19,6 @@ with (open("tekst_label_2407.pkl", "rb")) as openfile:
     tekst_labels = pickle.load(openfile)
 
 
-#"Kun for testing"
-tekstfil=open('httpwwwapollonuionoartikler1997streifhtmlStreiftogivitenskapensgrenseland.txt','r')
-with tekstfil as myfile:
-    tekst_data=myfile.read().replace('\n', '')
-
 # Natural Language Processing
 
 # Importing the libraries
@@ -37,13 +30,6 @@ import pandas as pd
 
 
 # Cleaning the texts
-import re
-
-import nltk
-nltk.download('stopwords')
-from nltk.corpus import stopwords
-
-from nltk.stem.snowball import NorwegianStemmer
 
 corpus = []
 label = []
@@ -67,7 +53,7 @@ for key,value in tekst_labels.items():
 print(label)
 
 # Creating the Bag of Words model
-from sklearn.feature_extraction.text import CountVectorizer
+
 cv = CountVectorizer(max_features = 2000)
 X = cv.fit_transform(corpus).toarray()
 #y = label.loc[:].values
@@ -77,7 +63,7 @@ X = cv.fit_transform(corpus).toarray()
 # print(y)
 #
 # Splitting the dataset into the Training set and Test set
-from sklearn.model_selection import train_test_split
+
 X_train, X_test, y_train, y_test = train_test_split(corpus, label, test_size = 0.20, random_state = 0)
 
 #
