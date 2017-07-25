@@ -1,86 +1,98 @@
 from sklearn.feature_extraction.text import CountVectorizer
+from gensim import models
 import pickle
 import re
 import nltk
 nltk.download('stopwords')
 from nltk.corpus import stopwords
+import numpy as np
+from nltk.tokenize import RegexpTokenizer
+tokenizer = RegexpTokenizer(r'\w+')
 from nltk.stem.snowball import NorwegianStemmer
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.model_selection import train_test_split
 
-# Leser inn pickle med label + tittel laget som dict med label som key og tittel som value.
+# Leser inn pickle med label + tittel laget som list av formatet [[labels][title]]
 #title_labels = []
 with (open("title_label_all.pkl", "rb")) as openfile:
         title_labels=pickle.load(openfile)
 
-# Leser inn pickle med label + tekst laget som dict med label som key og tekst som value.
-tekst_labels = []
+# Leser inn pickle med label + tekst laget som list av formatet [[labels][tekst]]
 with (open("tekst_label_all.pkl", "rb")) as openfile:
     tekst_labels = pickle.load(openfile)
 
+#Variabler
+deweynr= title_labels[0]
+titler = title_labels[1]
+tekst = tekst_labels[1]
 
-# Natural Language Processing
-
-# Importing the libraries
-
-import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
-
+# Laster inn forhåndslagd Word2Vec modell hentet fra https://github.com/Kyubyong/wordvectors
+word2vec_model = models.KeyedVectors.load('pre_word2vec_no/no.bin')
+print(word2vec_model['ball'].shape)
 
 
 # Cleaning the texts
 
-corpus = []
-label = []
+# Henter inn norsk stopp-ord liste fra nltk
+no_stop = stopwords.words('norwegian')
+print(no_stop)
 
-for key,value in tekst_labels.items():
-    #print (value)
-    value =re.sub('[^ÆØÅæøåa-zA-z]',' ',value)
-    #print(value)
-    value = value.lower()
-    #print(value)
-    value = value.split()
-    #print(value)
-    NorStem = NorwegianStemmer()
-    value = [NorStem.stem(word) for word in value if not word in set(stopwords.words('norwegian'))]
-    #print(value)
-    value = ' '.join(value)
-    #print(value)
-    corpus.append(value)
-    label.append(key)
+corpus_word2vec = np.zeros((len(tekst),300))
+print(corpus_word2vec.shape)
 
-print(label)
+final_labels=[]
+rows_to_delete=[]
+for i in range(len(deweynr)):
+    tittel_i= titler[i]
+    final_labels.append(deweynr[i])
+    tokens = tokenizer.tokenize(tekst[i])
+    stopped_tokens = [k for k in tokens if not k in no_stop]
+    count_in_vocab = 0
+    s = 0
+    if len(stopped_tokens) == 0:
+        rows_to_delete.append(i)
+        final_labels.pop(-1)
+        print(tekst)
+        print("sample ", i, "had no nonstops")
+    else:
+        for tok in stopped_tokens:
+            if tok.lower() in word2vec_model.vocab:
+                count_in_vocab+=1
+                s+=word2vec_model[tok.lower()]
+        if count_in_vocab!=0:
+           corpus_word2vec[i] = s/float(count_in_vocab)
+        else:
+           rows_to_delete.append(i)
+           final_labels.pop(-1)
+           print(tekst)
+           print("Sample",i,"had no word2vec")
+print(len(final_labels))
 
-# Creating the Bag of Words model
 
-cv = CountVectorizer(max_features = 2000)
-X = cv.fit_transform(corpus).toarray()
-#y = label.loc[:].values
-#print(y)
+from sklearn.preprocessing import MultiLabelBinarizer as mlb
+X = corpus_word2vec
+print(X.shape)
+Y = mlb.fit_transform(final_labels, False)
+print(Y.shape)
+print(np.sum(Y, axis = 0))
+#print(Y)
+
+#for i in range(0, len(deweynr)):
+#     #print (value)
+#     value =re.sub('[^ÆØÅæøåa-zA-z]',' ',value)
+#     #print(value)
+#     value = value.lower()
+#     #print(value)
+#     value = value.split()
+#     #print(value)
+#     NorStem = NorwegianStemmer()
+#     value = [NorStem.stem(word) for word in value if not word in set(stopwords.words('norwegian'))]
+#     #print(value)
+#     value = ' '.join(value)
+#     #print(value)
+#     corpus.append(value)
+#     deweynr.append(key)
 #
-# print(X)
-# print(y)
+# #print(deweynr)
+# print ((deweynr).shape)
+# print(len(corpus).shape)
 #
-# Splitting the dataset into the Training set and Test set
-
-X_train, X_test, y_train, y_test = train_test_split(corpus, label, test_size = 0.20, random_state = 0)
-
-#
-#
-# Fitting Naive Bayes to the Training set
-from sklearn.naive_bayes import GaussianNB
-classifier = GaussianNB()
-classifier.fit(X_train, y_train)
-
-# Predicting the Test set results
-y_pred = classifier.predict(X_test)
-
-# Making the Confusion Matrix
-from sklearn.metrics import confusion_matrix
-cm = confusion_matrix(y_test, y_pred)
-
-
-print (cm)
-# accuracy = (55+91)/200
-# print(accuracy)
+# # Creating the Bag of Words model

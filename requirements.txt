@@ -1,5 +1,4 @@
 nltk==3.2.4
-matplotlib==2.0.2
-pandas==0.20.3
+gensim==2.2.0
 numpy==1.11.0
 scikit_learn==0.19b2
