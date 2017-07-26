@@ -74,7 +74,30 @@ mlb = MultiLabelBinarizer()
 Y = mlb.fit_transform(final_labels)
 print(Y.shape)
 print(np.sum(Y, axis = 0))
-#print(Y)
+
+textual_features = (X,Y)
+mask_text = np.random.rand(len(X))<0.8
+X_train = X[mask_text]
+Y_train = Y[mask_text]
+X_test = X[~mask_text]
+Y_test = Y[~mask_text]
+
+from keras.models import Sequential
+from keras.layers import Dense, Activation
+model_textual = Sequential([
+    Dense(300,input_shape = (300,)),
+    Activation('relu'),
+    Dense(10),
+    Activation('softmax'),
+])
+
+model_textual.compile(optimizer= 'rmsprop',
+                      loss= 'sparse_categorical_crossentropy',
+                      metrics = ['accuracy'])
+model_textual.fit(X_train, Y_train, epochs = 10, batch_size = 500)
+score = model_textual.evaluate(X_test, Y_test, batch_size=249)
+print("%s: %.2f%%" % (model_textual.metrics_names[1], score[1]*100))
+
 
 #for i in range(0, len(deweynr)):
 #     #print (value)
