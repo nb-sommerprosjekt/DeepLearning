@@ -99,5 +99,45 @@ model_textual.fit(X_train, Y_train, epochs = 1000, batch_size = 250)
 score = model_textual.evaluate(X_test, Y_test, batch_size=249)
 print("\n %s: %.2f%%" % (model_textual.metrics_names[1], score[1]*100))
 
+Y_preds = model_textual.predict(X_test)
 
 
+
+def precision_recall(gt,preds):
+    TP=0
+    FP=0
+    FN=0
+    for t in gt:
+        if t in preds:
+            TP+=1
+        else:
+            FN+=1
+    for p in preds:
+        if p not in gt:
+            FP+=1
+    if TP+FP==0:
+        precision=0
+    else:
+        precision=TP/float(TP+FP)
+    if TP+FN==0:
+        recall=0
+    else:
+        recall=TP/float(TP+FN)
+    return precision,recall
+
+
+print ("Vår prediksjon av deweynr er -\n")
+presisjon = []
+recs = []
+for i in range(len(Y_preds)):
+    row = Y_preds[i]
+    gt_deweynr =[]
+    top_3=np.argsort(row)[-3:]
+    predikt_deweynr = []
+    for dewey in top_3:
+        predikt_deweynr.append(dewey)
+    (precision,recall) = precision_recall(Y_test[i], predikt_deweynr)
+    presisjon.append(precision)
+    recs.append(recall)
+    print( "Predicted: ", predikt_deweynr, " Actual: ", Y_test[i])
+print (np.mean(np.asarray(presisjon)),np.mean(np.asarray(recs)))
