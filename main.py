@@ -81,6 +81,7 @@ X_train = X[mask_text]
 Y_train = Y[mask_text]
 X_test = X[~mask_text]
 Y_test = Y[~mask_text]
+print(Y_test)
 
 from keras.models import Sequential
 from keras.layers import Dense, Activation
@@ -92,31 +93,11 @@ model_textual = Sequential([
 ])
 
 model_textual.compile(optimizer= 'rmsprop',
-                      loss= 'sparse_categorical_crossentropy',
+                      loss= 'binary_crossentropy',
                       metrics = ['accuracy'])
-model_textual.fit(X_train, Y_train, epochs = 10, batch_size = 500)
+model_textual.fit(X_train, Y_train, epochs = 1000, batch_size = 250)
 score = model_textual.evaluate(X_test, Y_test, batch_size=249)
-print("%s: %.2f%%" % (model_textual.metrics_names[1], score[1]*100))
+print("\n %s: %.2f%%" % (model_textual.metrics_names[1], score[1]*100))
 
 
-#for i in range(0, len(deweynr)):
-#     #print (value)
-#     value =re.sub('[^ÆØÅæøåa-zA-z]',' ',value)
-#     #print(value)
-#     value = value.lower()
-#     #print(value)
-#     value = value.split()
-#     #print(value)
-#     NorStem = NorwegianStemmer()
-#     value = [NorStem.stem(word) for word in value if not word in set(stopwords.words('norwegian'))]
-#     #print(value)
-#     value = ' '.join(value)
-#     #print(value)
-#     corpus.append(value)
-#     deweynr.append(key)
-#
-# #print(deweynr)
-# print ((deweynr).shape)
-# print(len(corpus).shape)
-#
-# # Creating the Bag of Words model
+
