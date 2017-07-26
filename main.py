@@ -1,17 +1,15 @@
-from sklearn.feature_extraction.text import CountVectorizer
 from gensim import models
 import pickle
 import re
 import nltk
-#nltk.download('stopwords')
+nltk.download('stopwords')
 from nltk.corpus import stopwords
 import numpy as np
 from nltk.tokenize import RegexpTokenizer
 tokenizer = RegexpTokenizer(r'\w+')
-from nltk.stem.snowball import NorwegianStemmer
+
 
 # Leser inn pickle med label + tittel laget som list av formatet [[labels][title]]
-#title_labels = []
 with (open("title_label_all.pkl", "rb")) as openfile:
         title_labels=pickle.load(openfile)
 
@@ -24,7 +22,7 @@ deweynr= title_labels[0]
 titler = title_labels[1]
 tekst = tekst_labels[1]
 
-# Laster inn forhåndslagd Word2Vec modell hentet fra https://github.com/Kyubyong/wordvectors
+#Laster inn forhåndslagd Word2Vec modell hentet fra https://github.com/Kyubyong/wordvectors
 word2vec_model = models.KeyedVectors.load('pre_word2vec_no/no.bin')
 print(word2vec_model['ball'].shape)
 
@@ -139,5 +137,5 @@ for i in range(len(Y_preds)):
     (precision,recall) = precision_recall(Y_test[i], predikt_deweynr)
     presisjon.append(precision)
     recs.append(recall)
-    print( "Predicted: ", predikt_deweynr, " Actual: ", Y_test[i])
+    print( "Predikert: ", predikt_deweynr, " Faktisk: ", Y_test[i])
 print (np.mean(np.asarray(presisjon)),np.mean(np.asarray(recs)))
