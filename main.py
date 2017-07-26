@@ -3,7 +3,7 @@ from gensim import models
 import pickle
 import re
 import nltk
-nltk.download('stopwords')
+#nltk.download('stopwords')
 from nltk.corpus import stopwords
 import numpy as np
 from nltk.tokenize import RegexpTokenizer
@@ -67,10 +67,11 @@ for i in range(len(deweynr)):
 print(len(final_labels))
 
 
-from sklearn.preprocessing import MultiLabelBinarizer as mlb
+from sklearn.preprocessing import MultiLabelBinarizer
 X = corpus_word2vec
 print(X.shape)
-Y = mlb.fit_transform(final_labels, False)
+mlb = MultiLabelBinarizer()
+Y = mlb.fit_transform(final_labels)
 print(Y.shape)
 print(np.sum(Y, axis = 0))
 #print(Y)
