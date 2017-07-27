@@ -80,15 +80,19 @@ print('-------------')
 print(np.sum(Y, axis = 0))
 
 textual_features = (X,Y)
-mask_text = np.random.rand(len(X))<0.9
-X_train = X[mask_text]
-Y_train = Y[mask_text]
-X_test = X[~mask_text]
-Y_test = Y[~mask_text]
+from sklearn.model_selection import train_test_split
+
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size = 0.3, random_state= 200, stratify = Y)
+mask_text = np.random.rand(len(X))<0.8
+# X_train = X[mask_text]
+# Y_train = Y[mask_text]
+# X_test = X[~mask_text]
+# Y_test = Y[~mask_text]
 print(Y_test)
 
 from keras.models import Sequential
 from keras.layers import Dense, Activation
+from keras.callbacks import TensorBoard, ReduceLROnPlateau
 model_textual = Sequential([
     Dense(300,input_shape = (300,)),
     Activation('relu'),
@@ -99,7 +103,10 @@ model_textual = Sequential([
 model_textual.compile(optimizer= 'rmsprop',
                       loss= 'binary_crossentropy',
                       metrics = ['accuracy'])
-model_textual.fit(X_train, Y_train, epochs = 10000, batch_size = 250)
+
+tbcallback = TensorBoard(log_dir='./logs', histogram_freq=0, batch_size=64, write_graph=True, write_grads=True, write_images=True, embeddings_freq=0, embeddings_layer_names=True, embeddings_metadata=True)
+reduceLR = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=10, verbose=0, mode='auto', epsilon=0.0001, cooldown=0, min_lr=0)
+model_textual.fit(X_train, Y_train, epochs = 1000, batch_size = 64, callbacks = [tbcallback, reduceLR])
 score = model_textual.evaluate(X_test, Y_test, batch_size=250)
 print("\n %s: %.2f%%" % (model_textual.metrics_names[1], score[1]*100))
 
