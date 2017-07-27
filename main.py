@@ -66,15 +66,21 @@ print(len(final_labels))
 
 
 from sklearn.preprocessing import MultiLabelBinarizer
+from sklearn.preprocessing import LabelBinarizer
 X = corpus_word2vec
 print(X.shape)
-mlb = MultiLabelBinarizer()
-Y = mlb.fit_transform(final_labels)
+#mlb = MultiLabelBinarizer()
+lb = LabelBinarizer()
+#print(final_labels)
+#Y = mlb.fit_transform(final_labels)
+Y = lb.fit_transform(final_labels)
+print('-------------')
 print(Y.shape)
+print('-------------')
 print(np.sum(Y, axis = 0))
 
 textual_features = (X,Y)
-mask_text = np.random.rand(len(X))<0.8
+mask_text = np.random.rand(len(X))<0.9
 X_train = X[mask_text]
 Y_train = Y[mask_text]
 X_test = X[~mask_text]
@@ -86,19 +92,19 @@ from keras.layers import Dense, Activation
 model_textual = Sequential([
     Dense(300,input_shape = (300,)),
     Activation('relu'),
-    Dense(10),
+    Dense(304),
     Activation('softmax'),
 ])
 
 model_textual.compile(optimizer= 'rmsprop',
                       loss= 'binary_crossentropy',
                       metrics = ['accuracy'])
-model_textual.fit(X_train, Y_train, epochs = 1000, batch_size = 250)
-score = model_textual.evaluate(X_test, Y_test, batch_size=249)
+model_textual.fit(X_train, Y_train, epochs = 10000, batch_size = 250)
+score = model_textual.evaluate(X_test, Y_test, batch_size=250)
 print("\n %s: %.2f%%" % (model_textual.metrics_names[1], score[1]*100))
 
 Y_preds = model_textual.predict(X_test)
-
+print(Y_preds)
 
 
 def precision_recall(gt,preds):
@@ -123,7 +129,7 @@ def precision_recall(gt,preds):
         recall=TP/float(TP+FN)
     return precision,recall
 
-
+Y_test_ikkebinary = lb.inverse_transform(Y_test)
 print ("Vår prediksjon av deweynr er -\n")
 presisjon = []
 recs = []
@@ -137,5 +143,7 @@ for i in range(len(Y_preds)):
     (precision,recall) = precision_recall(Y_test[i], predikt_deweynr)
     presisjon.append(precision)
     recs.append(recall)
-    print( "Predikert: ", predikt_deweynr, " Faktisk: ", Y_test[i])
+    print( "Predikert: ", predikt_deweynr, " Faktisk: ", Y_test_ikkebinary[i])
 print (np.mean(np.asarray(presisjon)),np.mean(np.asarray(recs)))
+
+# #print(mlb.inverse_transform(Y_test))
