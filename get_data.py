@@ -9,8 +9,8 @@ def text_to_pickle():
     label_list=list()
     text_list = list()
     title_list =list()
-    pickle_title = open('title_label_all_new', 'ab+')
-    pickle_tekst = open('tekst_label_all_new', 'ab+')
+    pickle_title = open('title_label_all.pckl', 'ab+')
+    pickle_tekst = open('tekst_label_all.pckl', 'ab+')
     for subdir, dirs, files in os.walk(rootdir):
         for file in files:
             if str(file)[:5] == "meta-":

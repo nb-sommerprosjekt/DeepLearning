@@ -4,8 +4,8 @@ tekst_label_2407.pkl
 title_label.pkl
 title_label_2407.pkl
 stop_words.txt
-tekst_label_all.pkl
-title_label_all.pkl
+tekst_label_all.pckl
+title_label_all.pckl
 textual_features.pckl
 *pre_word2vec_no
 *logs

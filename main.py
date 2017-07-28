@@ -39,10 +39,10 @@ model_textual.compile(optimizer= 'rmsprop',
                       loss= 'binary_crossentropy',
                       metrics = ['accuracy'])
 
-tbcallback = TensorBoard(log_dir='./logs', histogram_freq=0, batch_size=250, write_graph=True, write_grads=True, write_images=True, embeddings_freq=0, embeddings_layer_names=True, embeddings_metadata=True)
+tbcallback = TensorBoard(log_dir='./logs', histogram_freq=0, batch_size=1000, write_graph=True, write_grads=True, write_images=True, embeddings_freq=0, embeddings_layer_names=True, embeddings_metadata=True)
 reduceLR = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=10, verbose=0, mode='auto', epsilon=0.0001, cooldown=0, min_lr=0)
-model_textual.fit(X_train, Y_train, epochs = 10, batch_size = 250, callbacks = [tbcallback, reduceLR])
-score = model_textual.evaluate(X_test, Y_test, batch_size=250)
+model_textual.fit(X_train, Y_train, epochs = 1000, batch_size = 1000, callbacks = [tbcallback, reduceLR])
+score = model_textual.evaluate(X_test, Y_test, batch_size=1000)
 print("\n %s: %.2f%%" % (model_textual.metrics_names[1], score[1]*100))
 
 
