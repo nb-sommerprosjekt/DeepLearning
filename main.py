@@ -1,95 +1,30 @@
-from gensim import models
+import numpy as np
 import pickle
-import re
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelBinarizer
 import nltk
 nltk.download('stopwords')
-from nltk.corpus import stopwords
-import numpy as np
 from nltk.tokenize import RegexpTokenizer
 tokenizer = RegexpTokenizer(r'\w+')
+from preprocessing import final_labels
 
 
-# Leser inn pickle med label + tittel laget som list av formatet [[labels][title]]
-with (open("title_label_all.pkl", "rb")) as openfile:
-        title_labels=pickle.load(openfile)
+#-----------------------------------------------------------------------#
+#--------------------Trening - Test-------------------------------------#
+#----------------------------------------------------------------------#
 
-# Leser inn pickle med label + tekst laget som list av formatet [[labels][tekst]]
-with (open("tekst_label_all.pkl", "rb")) as openfile:
-    tekst_labels = pickle.load(openfile)
+feature_pickle = open('textual_features.pckl','rb')
+textual_features = pickle.load(feature_pickle)
+feature_pickle.close()
 
-#Variabler
-deweynr= title_labels[0]
-titler = title_labels[1]
-tekst = tekst_labels[1]
-
-#Laster inn forhåndslagd Word2Vec modell hentet fra https://github.com/Kyubyong/wordvectors
-word2vec_model = models.KeyedVectors.load('pre_word2vec_no/no.bin')
-print(word2vec_model['ball'].shape)
-
-
-# Cleaning the texts
-
-# Henter inn norsk stopp-ord liste fra nltk
-no_stop = stopwords.words('norwegian')
-print(no_stop)
-
-corpus_word2vec = np.zeros((len(tekst),300))
-print(corpus_word2vec.shape)
-
-final_labels=[]
-rows_to_delete=[]
-for i in range(len(deweynr)):
-    tittel_i= titler[i]
-    final_labels.append(deweynr[i])
-    tokens = tokenizer.tokenize(tekst[i])
-    stopped_tokens = [k for k in tokens if not k in no_stop]
-    count_in_vocab = 0
-    s = 0
-    if len(stopped_tokens) == 0:
-        rows_to_delete.append(i)
-        final_labels.pop(-1)
-        print(tekst)
-        print("sample ", i, "had no nonstops")
-    else:
-        for tok in stopped_tokens:
-            if tok.lower() in word2vec_model.vocab:
-                count_in_vocab+=1
-                s+=word2vec_model[tok.lower()]
-        if count_in_vocab!=0:
-           corpus_word2vec[i] = s/float(count_in_vocab)
-        else:
-           rows_to_delete.append(i)
-           final_labels.pop(-1)
-           print(tekst)
-           print("Sample",i,"had no word2vec")
-print(len(final_labels))
-
-
-from sklearn.preprocessing import MultiLabelBinarizer
-from sklearn.preprocessing import LabelBinarizer
-X = corpus_word2vec
+(X, Y) = textual_features
 print(X.shape)
-#mlb = MultiLabelBinarizer()
-lb = LabelBinarizer()
-#print(final_labels)
-#Y = mlb.fit_transform(final_labels)
-Y = lb.fit_transform(final_labels)
-print('-------------')
 print(Y.shape)
-print('-------------')
-print(np.sum(Y, axis = 0))
-
-textual_features = (X,Y)
-from sklearn.model_selection import train_test_split
-
-X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size = 0.3, random_state= 200, stratify = Y)
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size = 0.2, random_state= 200, stratify = Y)
 mask_text = np.random.rand(len(X))<0.8
-# X_train = X[mask_text]
-# Y_train = Y[mask_text]
-# X_test = X[~mask_text]
-# Y_test = Y[~mask_text]
-print(Y_test)
 
+
+#--------------------Building Keras models ----------#
 from keras.models import Sequential
 from keras.layers import Dense, Activation
 from keras.callbacks import TensorBoard, ReduceLROnPlateau
@@ -104,12 +39,14 @@ model_textual.compile(optimizer= 'rmsprop',
                       loss= 'binary_crossentropy',
                       metrics = ['accuracy'])
 
-tbcallback = TensorBoard(log_dir='./logs', histogram_freq=0, batch_size=64, write_graph=True, write_grads=True, write_images=True, embeddings_freq=0, embeddings_layer_names=True, embeddings_metadata=True)
+tbcallback = TensorBoard(log_dir='./logs', histogram_freq=0, batch_size=250, write_graph=True, write_grads=True, write_images=True, embeddings_freq=0, embeddings_layer_names=True, embeddings_metadata=True)
 reduceLR = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=10, verbose=0, mode='auto', epsilon=0.0001, cooldown=0, min_lr=0)
-model_textual.fit(X_train, Y_train, epochs = 1000, batch_size = 64, callbacks = [tbcallback, reduceLR])
+model_textual.fit(X_train, Y_train, epochs = 10, batch_size = 250, callbacks = [tbcallback, reduceLR])
 score = model_textual.evaluate(X_test, Y_test, batch_size=250)
 print("\n %s: %.2f%%" % (model_textual.metrics_names[1], score[1]*100))
 
+
+#-------------------Testing model-------------------------#
 Y_preds = model_textual.predict(X_test)
 print(Y_preds)
 
@@ -135,7 +72,8 @@ def precision_recall(gt,preds):
     else:
         recall=TP/float(TP+FN)
     return precision,recall
-
+lb = LabelBinarizer()
+Y_test_ikkebinary = lb.fit_transform(final_labels)
 Y_test_ikkebinary = lb.inverse_transform(Y_test)
 print ("Vår prediksjon av deweynr er -\n")
 presisjon = []
