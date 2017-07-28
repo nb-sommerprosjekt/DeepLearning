@@ -14,11 +14,11 @@ tokenizer = RegexpTokenizer(r'\w+')
 #--------------------------------------------------------------------#
 
 # Leser inn pickle med label + tittel laget som list av formatet [[labels][title]]
-with (open("title_label_all.pkl", "rb")) as openfile:
+with (open("title_label_all.pckl", "rb")) as openfile:
         title_labels=pickle.load(openfile)
 
 # Leser inn pickle med label + tekst laget som list av formatet [[labels][tekst]]
-with (open("tekst_label_all.pkl", "rb")) as openfile:
+with (open("tekst_label_all.pckl", "rb")) as openfile:
     tekst_labels = pickle.load(openfile)
 
 #Variabler
