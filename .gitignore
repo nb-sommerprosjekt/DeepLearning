@@ -7,3 +7,4 @@ stop_words.txt
 tekst_label_all.pkl
 title_label_all.pkl
 *pre_word2vec_no
+*logs
