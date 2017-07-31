@@ -79,7 +79,7 @@ Y = lb.fit_transform(final_labels)
 #print(Y.shape)
 #print('-------------')
 #print(np.sum(Y, axis = 0))
-textual_features = (X,Y)
+textual_features = (X,Y, final_labels)
 
 feature_pickle = open('textual_features.pckl','wb')
 pickle.dump(textual_features, feature_pickle)

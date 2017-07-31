@@ -9,3 +9,4 @@ title_label_all.pckl
 textual_features.pckl
 *pre_word2vec_no
 *logs
+__pycache__
