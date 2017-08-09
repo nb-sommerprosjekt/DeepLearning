@@ -1,16 +1,15 @@
 import os
 import re
 import pickle
-
 #Lager pickles som inneholder tittel/tekst og dewey i formatet [dewey][tittel/tekst]]
 def text_to_pickle():
-    rootdir = "/home/ubuntu/fastText/data_nb/data_nb/training_set_dewey/"
+    rootdir = "/home/ubuntu/Downloads/knut_0708/none_under_ten"
 
     label_list=list()
     text_list = list()
     title_list =list()
-    pickle_title = open('title_label_all.pckl', 'ab+')
-    pickle_tekst = open('tekst_label_all.pckl', 'ab+')
+    pickle_title = open('title_label_knut0708.pckl', 'ab+')
+    pickle_tekst = open('tekst_label_all_knut0708.pckl', 'ab+')
     for subdir, dirs, files in os.walk(rootdir):
         for file in files:
             if str(file)[:5] == "meta-":
