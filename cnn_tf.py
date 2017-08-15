@@ -6,14 +6,25 @@ from keras.preprocessing.text import Tokenizer, one_hot,text_to_word_sequence
 from sklearn.model_selection import train_test_split
 tf.logging.set_verbosity(tf.logging.INFO)
 
+#PARAMETERS
+
+TEXT_LENGTH = 2000
+
+
 
 def reshape_list_to_matrix(sequence):
-    sequence = np.array(sequence)
-    sequence.resize(10000)
-    sequence=sequence.reshape((500, 20))
+    # sequence = np.array(sequence)
+    # sequence.resize(10000)
+    # sequence.tolist()
+    # for i in range(len(sequence)):
+    #     temp=str(sequence[i]).strip()
+    #     sequence[i]=int(temp) if temp else 0
+    if len(sequence)>TEXT_LENGTH:
+        sequence=sequence[:TEXT_LENGTH]
+    else:
+        while len(sequence)<TEXT_LENGTH:
+            sequence.append([0])
 
-    sequence.tolist()
-    print(type(sequence))
     return sequence
 
 
@@ -63,13 +74,13 @@ X_train, X_test, Y_train, Y_test = train_test_split(X, Y,test_size=0.2, random_s
 #     temp = reshape_list_to_matrix(tokenizer, tokenizer.sequences_to_matrix(sequence))
 #     train_step.run(feed_dict={x: [temp], y_: [Y_train[i]], keep_prob: 0.5})
 
-temp=tokenizer.texts_to_sequences(test)
-temp=reshape_list_to_matrix(temp)
-temp=tokenizer.sequences_to_matrix(temp)
-print(len(temp))
-
+        # temp=tokenizer.texts_to_sequences(test)
+        # print(len(temp))
+        # temp=reshape_list_to_matrix(temp)
+        # temp=tokenizer.sequences_to_matrix(temp)
+        # temp=np.asarray(temp)
+        # print(temp.shape)
 print(time.time()-tid)
-exit(0)
 
 #Build the actual network
 
@@ -87,20 +98,19 @@ def deepnn(x):
   # Reshape to use within a convolutional neural net.
   # Last dimension is for "features" - there is only one here, since images are
   # grayscale -- it would be 3 for an RGB image, 4 for RGBA, etc.
-  x_image = x
+  x_image = tf.reshape(x,(-1,TEXT_LENGTH,3000,1))
 
   # First convolutional layer - maps one grayscale image to 32 feature maps.
-  W_conv1 = weight_variable([5, 5, 3000, 500])
-  b_conv1 = bias_variable([500])
-  print(x.shape)
+  W_conv1 = weight_variable([5, 5, 1, 4])
+  b_conv1 = bias_variable([4])
   h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1)
 
   # Pooling layer - downsamples by 2X.
   h_pool1 = max_pool_2x2(h_conv1)
 
   # Second convolutional layer -- maps 32 feature maps to 64.
-  W_conv2 = weight_variable([5, 5, 500,1000])
-  b_conv2 = bias_variable([1000])
+  W_conv2 = weight_variable([5, 5, 4,8])
+  b_conv2 = bias_variable([8])
   h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
 
   # Second pooling layer.
@@ -108,10 +118,10 @@ def deepnn(x):
 
   # Fully connected layer 1 -- after 2 round of downsampling, our 28x28 image
   # is down to 7x7x64 feature maps -- maps this to 1024 features.
-  W_fc1 = weight_variable([1000, 1000])
+  W_fc1 = weight_variable([500*750*8, 1000])#2500*750*64
   b_fc1 = bias_variable([1000])
 
-  h_pool2_flat = tf.reshape(h_pool2, [-1, 1000])
+  h_pool2_flat = tf.reshape(h_pool2, [-1, 500*750*8])
   h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
 
   # Dropout - controls the complexity of the model, prevents co-adaptation of
@@ -129,13 +139,13 @@ def deepnn(x):
 
 def conv2d(x, W):
   """conv2d returns a 2d convolution layer with full stride."""
-  return tf.nn.conv2d(x, W, strides=[1, 25, 1, 150], padding='SAME')
+  return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
 
 
 def max_pool_2x2(x):
   """max_pool_2x2 downsamples a feature map by 2X."""
   return tf.nn.max_pool(x, ksize=[1, 2, 2, 1],
-                        strides=[1, 4, 4, 1], padding='SAME')
+                        strides=[1, 2, 2, 1], padding='SAME')
 
 
 def weight_variable(shape):
@@ -157,7 +167,7 @@ labels = Y_train.shape[1]
 epochs=1
 display_step=0
 
-x = tf.placeholder(tf.float32, [None, 500, 20, 3000])
+x = tf.placeholder(tf.float32, [None, TEXT_LENGTH, 3000])
 
 
 # Define loss and optimizer
@@ -183,9 +193,15 @@ with tf.Session() as sess:
     for epoch in range(epochs):
         avg_cost = 0.
         print("epoch nr {}".format(epoch))
-        for i,sequence in enumerate(tokenizer.texts_to_sequences_generator(X_train)):
-            temp = reshape_list_to_matrix(tokenizer, tokenizer.sequences_to_matrix(sequence))
-            train_step.run(feed_dict={x: [temp], y_: [Y_train[i]], keep_prob: 0.5})
+        for i in range(len(X_train)):
+
+            sequence=tokenizer.texts_to_sequences(X_train[i])
+            sequence = reshape_list_to_matrix(sequence)
+            sequence = tokenizer.sequences_to_matrix(sequence)
+            print(sequence.shape)
+
+
+            train_step.run(feed_dict={x: [sequence], y_: [Y_train[i]], keep_prob: 0.5})
         #     _, c = sess.run([train_step, cost], feed_dict={x: batch_xs, y_: batch_ys, keep_prob: 0.5})
         #     avg_cost += c/num_examples
         # if (epoch+1) % display_step == 0:
