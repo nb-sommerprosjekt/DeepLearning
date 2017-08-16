@@ -35,7 +35,12 @@ for i in deweynr_db:
         unique_dewey.append(i)
 print (len(unique_dewey))
 print(len(deweynr_db))
-
 #Use Gensim, load fastText trained .vec file with load.word2vec models and use most_similiar() method to find similar words!
 wordvec = gensim.models.wrappers.FastText.load_word2vec_format('wiki.no/wiki.no.vec')
-print(wordvec['innhøsting'])
+wordvec.wv.syn0norm
+vocab = wordvec.wv.vocab
+wordvec.wv.save_word2vec_format('new_word2vec',fvocab=vocab)
+test_vector = wordvec["høst"]
+#print(gensim.models.wrappers.FastText.wv.similar_by_vector(vector=test_vector))
+#print(wordvec.wv.similar_by_vector(vector = test_vector, topn=3))
+#print(wordvec['innhøsting'])
