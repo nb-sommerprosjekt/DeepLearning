@@ -52,7 +52,7 @@ dewey_matrix = tokenizer2.texts_to_matrix(deweynr)
 
 
 # prøv med den andre tokenizeren.
-tokenizer = Tokenizer(num_words=3000,
+tokenizer = Tokenizer(num_words=500,
                       filters='!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n',
                       lower=False,
                       split=" ",
@@ -98,30 +98,31 @@ def deepnn(x):
   # Reshape to use within a convolutional neural net.
   # Last dimension is for "features" - there is only one here, since images are
   # grayscale -- it would be 3 for an RGB image, 4 for RGBA, etc.
-  x_image = tf.reshape(x,(-1,TEXT_LENGTH,3000,1))
 
+  x_image = tf.reshape(x,(-1,TEXT_LENGTH,500,1))
+  print(x_image.shape)
   # First convolutional layer - maps one grayscale image to 32 feature maps.
-  W_conv1 = weight_variable([5, 5, 1, 4])
-  b_conv1 = bias_variable([4])
+  W_conv1 = weight_variable([5, 5, 1, 1])
+  b_conv1 = bias_variable([1])
   h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1)
 
   # Pooling layer - downsamples by 2X.
   h_pool1 = max_pool_2x2(h_conv1)
-
+  print(h_pool1.shape)
   # Second convolutional layer -- maps 32 feature maps to 64.
-  W_conv2 = weight_variable([5, 5, 4,8])
-  b_conv2 = bias_variable([8])
+  W_conv2 = weight_variable([5, 5, 1,1])
+  b_conv2 = bias_variable([1])
   h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
 
   # Second pooling layer.
   h_pool2 = max_pool_2x2(h_conv2)
-
+  print(h_pool2)
   # Fully connected layer 1 -- after 2 round of downsampling, our 28x28 image
   # is down to 7x7x64 feature maps -- maps this to 1024 features.
-  W_fc1 = weight_variable([500*750*8, 1000])#2500*750*64
+  W_fc1 = weight_variable([500*125*1, 1000])#2500*750*64
   b_fc1 = bias_variable([1000])
 
-  h_pool2_flat = tf.reshape(h_pool2, [-1, 500*750*8])
+  h_pool2_flat = tf.reshape(h_pool2, [-1, 500*125*1])
   h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
 
   # Dropout - controls the complexity of the model, prevents co-adaptation of
@@ -134,6 +135,7 @@ def deepnn(x):
   b_fc2 = bias_variable([257])
 
   y_conv = tf.matmul(h_fc1_drop, W_fc2) + b_fc2
+  print(y_conv)
   return y_conv, keep_prob
 
 
@@ -162,12 +164,12 @@ def bias_variable(shape):
 
 
   # Import data
-nr_words = 3000
+nr_words = 500
 labels = Y_train.shape[1]
 epochs=1
 display_step=0
 
-x = tf.placeholder(tf.float32, [None, TEXT_LENGTH, 3000])
+x = tf.placeholder(tf.float32, [None, TEXT_LENGTH, 500])
 
 
 # Define loss and optimizer
@@ -190,15 +192,18 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
+    tid1=time.time()
     for epoch in range(epochs):
         avg_cost = 0.
         print("epoch nr {}".format(epoch))
+        tid=time.time()
         for i in range(len(X_train)):
 
             sequence=tokenizer.texts_to_sequences(X_train[i])
             sequence = reshape_list_to_matrix(sequence)
             sequence = tokenizer.sequences_to_matrix(sequence)
-            print(sequence.shape)
+            if i%100==0:
+                print(i)
 
 
             train_step.run(feed_dict={x: [sequence], y_: [Y_train[i]], keep_prob: 0.5})
@@ -207,12 +212,15 @@ with tf.Session() as sess:
         # if (epoch+1) % display_step == 0:
         #     print("Epoch:", '%04d' % (epoch+1), "cost=", "{:.9f}".format(avg_cost))
         acc=0
-        for i,sequence in enumerate(tokenizer.texts_to_sequences_generator(X_test)):
-            acc+=accuracy.eval(feed_dict={x: [reshape_list_to_matrix(tokenizer,sequence)], y_: [Y_train[i]], keep_prob: 1.0})
+        for i in range(len(X_test)):
+            sequence = tokenizer.texts_to_sequences(X_test[i])
+            sequence = reshape_list_to_matrix(sequence)
+            sequence = tokenizer.sequences_to_matrix(sequence)
+            acc+=accuracy.eval(feed_dict={x: [sequence], y_: [Y_train[i]], keep_prob: 1.0})
 
-        print(epoch,' accuracy %g' % acc/len(X_test))
-
-
+        print(epoch,' accuracy %g' % (acc/len(X_test)))
+        print("Den epochen tok {} sekunder".format(time.time()-tid))
+    print("Total run time is: {}".format(time.time()-tid1))
 
 
 
