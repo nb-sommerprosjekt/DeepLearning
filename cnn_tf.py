@@ -8,8 +8,8 @@ tf.logging.set_verbosity(tf.logging.INFO)
 
 #PARAMETERS
 
-TEXT_LENGTH = 2000
-
+TEXT_LENGTH = 3000
+NR_WORDS = 4000
 
 
 def reshape_list_to_matrix(sequence):
@@ -52,7 +52,7 @@ dewey_matrix = tokenizer2.texts_to_matrix(deweynr)
 
 
 # prøv med den andre tokenizeren.
-tokenizer = Tokenizer(num_words=500,
+tokenizer = Tokenizer(num_words=NR_WORDS,
                       filters='!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n',
                       lower=False,
                       split=" ",
@@ -99,30 +99,24 @@ def deepnn(x):
   # Last dimension is for "features" - there is only one here, since images are
   # grayscale -- it would be 3 for an RGB image, 4 for RGBA, etc.
 
-  x_image = tf.reshape(x,(-1,TEXT_LENGTH,500,1))
+  x_image = tf.reshape(x,(-1,TEXT_LENGTH,NR_WORDS,1))
   print(x_image.shape)
   # First convolutional layer - maps one grayscale image to 32 feature maps.
-  W_conv1 = weight_variable([5, 5, 1, 1])
-  b_conv1 = bias_variable([1])
+  W_conv1 = weight_variable([5, 5, 1, 2])
+  b_conv1 = bias_variable([2])
   h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1)
 
   # Pooling layer - downsamples by 2X.
   h_pool1 = max_pool_2x2(h_conv1)
-  print(h_pool1.shape)
-  # Second convolutional layer -- maps 32 feature maps to 64.
-  W_conv2 = weight_variable([5, 5, 1,1])
-  b_conv2 = bias_variable([1])
-  h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
 
-  # Second pooling layer.
-  h_pool2 = max_pool_2x2(h_conv2)
-  print(h_pool2)
+
+
   # Fully connected layer 1 -- after 2 round of downsampling, our 28x28 image
   # is down to 7x7x64 feature maps -- maps this to 1024 features.
-  W_fc1 = weight_variable([500*125*1, 1000])#2500*750*64
+  W_fc1 = weight_variable([94000, 1000])#2500*750*64
   b_fc1 = bias_variable([1000])
 
-  h_pool2_flat = tf.reshape(h_pool2, [-1, 500*125*1])
+  h_pool2_flat = tf.reshape(h_pool1, [-1, 94000])
   h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
 
   # Dropout - controls the complexity of the model, prevents co-adaptation of
@@ -146,8 +140,8 @@ def conv2d(x, W):
 
 def max_pool_2x2(x):
   """max_pool_2x2 downsamples a feature map by 2X."""
-  return tf.nn.max_pool(x, ksize=[1, 2, 2, 1],
-                        strides=[1, 2, 2, 1], padding='SAME')
+  return tf.nn.max_pool(x, ksize=[1, 16, 16, 1],
+                        strides=[1, 16, 16, 1], padding='SAME')
 
 
 def weight_variable(shape):
@@ -164,12 +158,12 @@ def bias_variable(shape):
 
 
   # Import data
-nr_words = 500
+
 labels = Y_train.shape[1]
-epochs=1
+epochs=3
 display_step=0
 
-x = tf.placeholder(tf.float32, [None, TEXT_LENGTH, 500])
+x = tf.placeholder(tf.float32, [None, TEXT_LENGTH, NR_WORDS])
 
 
 # Define loss and optimizer
