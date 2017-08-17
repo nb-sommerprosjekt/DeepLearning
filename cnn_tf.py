@@ -8,8 +8,8 @@ tf.logging.set_verbosity(tf.logging.INFO)
 
 #PARAMETERS
 
-TEXT_LENGTH = 3000
-NR_WORDS = 4000
+TEXT_LENGTH = 2000
+NR_WORDS = 2000
 
 
 def reshape_list_to_matrix(sequence):
@@ -113,10 +113,10 @@ def deepnn(x):
 
   # Fully connected layer 1 -- after 2 round of downsampling, our 28x28 image
   # is down to 7x7x64 feature maps -- maps this to 1024 features.
-  W_fc1 = weight_variable([94000, 1000])#2500*750*64
+  W_fc1 = weight_variable([31250, 1000])#2500*750*64
   b_fc1 = bias_variable([1000])
 
-  h_pool2_flat = tf.reshape(h_pool1, [-1, 94000])
+  h_pool2_flat = tf.reshape(h_pool1, [-1, 31250])
   h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
 
   # Dropout - controls the complexity of the model, prevents co-adaptation of
@@ -162,6 +162,8 @@ def bias_variable(shape):
 labels = Y_train.shape[1]
 epochs=3
 display_step=0
+num_examples= 100#len(X_train)
+num_test=100#len(X_test)
 
 x = tf.placeholder(tf.float32, [None, TEXT_LENGTH, NR_WORDS])
 
@@ -175,7 +177,6 @@ y_conv, keep_prob = deepnn(x)
 cross_entropy = tf.reduce_mean(
     tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y_conv))
 
-cost = tf.reduce_mean(-tf.reduce_sum(y_conv*tf.log(y_), reduction_indices=1))
 
 train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
 
@@ -191,29 +192,33 @@ with tf.Session() as sess:
         avg_cost = 0.
         print("epoch nr {}".format(epoch))
         tid=time.time()
-        for i in range(len(X_train)):
+        for i in range(num_examples):
 
             sequence=tokenizer.texts_to_sequences(X_train[i])
             sequence = reshape_list_to_matrix(sequence)
-            sequence = tokenizer.sequences_to_matrix(sequence)
+            sequence = tokenizer.sequences_to_matrix(sequence,mode="tfidf")
             if i%100==0:
                 print(i)
 
 
             train_step.run(feed_dict={x: [sequence], y_: [Y_train[i]], keep_prob: 0.5})
+            c = sess.run(cross_entropy, feed_dict={x: [sequence], y_: [Y_train[i]], keep_prob: 1.0})
         #     _, c = sess.run([train_step, cost], feed_dict={x: batch_xs, y_: batch_ys, keep_prob: 0.5})
         #     avg_cost += c/num_examples
         # if (epoch+1) % display_step == 0:
         #     print("Epoch:", '%04d' % (epoch+1), "cost=", "{:.9f}".format(avg_cost))
+            avg_cost+=c
         acc=0
-        for i in range(len(X_test)):
+        for i in range(num_test):
             sequence = tokenizer.texts_to_sequences(X_test[i])
             sequence = reshape_list_to_matrix(sequence)
-            sequence = tokenizer.sequences_to_matrix(sequence)
+            sequence = tokenizer.sequences_to_matrix(sequence,mode="tfidf")
             acc+=accuracy.eval(feed_dict={x: [sequence], y_: [Y_train[i]], keep_prob: 1.0})
 
-        print(epoch,' accuracy %g' % (acc/len(X_test)))
+
+        print(epoch,' accuracy %g' % (acc/num_test))
         print("Den epochen tok {} sekunder".format(time.time()-tid))
+        print("Loss: {}".format(avg_cost/num_examples))
     print("Total run time is: {}".format(time.time()-tid1))
 
 
