@@ -8,8 +8,8 @@ tf.logging.set_verbosity(tf.logging.INFO)
 
 #PARAMETERS
 
-TEXT_LENGTH = 2000
-NR_WORDS = 2000
+TEXT_LENGTH = 4000
+NR_WORDS = 4000
 
 
 def reshape_list_to_matrix(sequence):
@@ -99,24 +99,26 @@ def deepnn(x):
   # Last dimension is for "features" - there is only one here, since images are
   # grayscale -- it would be 3 for an RGB image, 4 for RGBA, etc.
 
-  x_image = tf.reshape(x,(-1,TEXT_LENGTH,NR_WORDS,1))
+  x_image = x#tf.reshape(x,(-1,TEXT_LENGTH,NR_WORDS,1))
   print(x_image.shape)
-  # First convolutional layer - maps one grayscale image to 32 feature maps.
-  W_conv1 = weight_variable([5, 5, 1, 2])
-  b_conv1 = bias_variable([2])
-  h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1)
+  # First convolutional layer - maps one grayscale image to 32 feature maps.    
+  b_conv1 = bias_variable([32])
+  with tf.variable_scope("model", reuse=None):
+    h_conv1 = tf.nn.relu(conv1d(x_image, 32,3,2) + b_conv1)
 
-  # Pooling layer - downsamples by 2X.
-  h_pool1 = max_pool_2x2(h_conv1)
+  b_conv2 = bias_variable([64])
+  with tf.variable_scope("model1", reuse=None):
+    h_conv2 = tf.nn.relu(conv1d(h_conv1, 64,3,1) + b_conv2)
 
-
+  b_conv3 = bias_variable([64])
+  h_conv3 = tf.nn.relu(conv1d(h_conv2, 64, 3, 2) + b_conv3)
 
   # Fully connected layer 1 -- after 2 round of downsampling, our 28x28 image
   # is down to 7x7x64 feature maps -- maps this to 1024 features.
-  W_fc1 = weight_variable([31250, 1000])#2500*750*64
-  b_fc1 = bias_variable([1000])
+  W_fc1 = weight_variable([16000*4*2, 4000])#2500*750*64
+  b_fc1 = bias_variable([4000])
 
-  h_pool2_flat = tf.reshape(h_pool1, [-1, 31250])
+  h_pool2_flat = tf.reshape(h_conv3, [-1, 16000*4*2])
   h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
 
   # Dropout - controls the complexity of the model, prevents co-adaptation of
@@ -125,7 +127,7 @@ def deepnn(x):
   h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
 
   # Map the 1024 features to 10 classes, one for each digit
-  W_fc2 = weight_variable([1000, 257])
+  W_fc2 = weight_variable([4000, 257])
   b_fc2 = bias_variable([257])
 
   y_conv = tf.matmul(h_fc1_drop, W_fc2) + b_fc2
@@ -155,15 +157,37 @@ def bias_variable(shape):
   initial = tf.constant(0.1, shape=shape)
   return tf.Variable(initial)
 
+def conv1d(input_, output_size, width, stride):
+      '''
+      :param input_: A tensor of embedded tokens with shape [batch_size,max_length,embedding_size]
+      :param output_size: The number of feature maps we'd like to calculate
+      :param width: The filter width
+      :param stride: The stride
+      :return: A tensor of the concolved input with shape [batch_size,max_length,output_size]
+      '''
+      inputSize = input_.get_shape()[-1]  # How many channels on the input (The size of our embedding for instance)
+
+      # This is the kicker where we make our text an image of height 1
+      input_ = tf.expand_dims(input_, axis=1)  # Change the shape to [batch_size,1,max_length,output_size]
+
+      # Make sure the height of the filter is 1
+      filter_ = tf.get_variable("conv_filter", shape=[1, width, inputSize, output_size])
+
+      # Run the convolution as if this were an image
+      convolved = tf.nn.conv2d(input_, filter=filter_, strides=[1, 1, stride, 1], padding="SAME")
+      # Remove the extra dimension, eg make the shape [batch_size,max_length,output_size]
+      result = tf.squeeze(convolved, axis=1)
+      return result
+
 
 
   # Import data
 
 labels = Y_train.shape[1]
-epochs=3
+epochs=25
 display_step=0
-num_examples= 100#len(X_train)
-num_test=100#len(X_test)
+num_examples=len(X_train)
+num_test=len(X_test)
 
 x = tf.placeholder(tf.float32, [None, TEXT_LENGTH, NR_WORDS])
 
